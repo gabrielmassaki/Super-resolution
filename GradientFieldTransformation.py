@@ -51,21 +51,19 @@ def GradientFieldTransformation(LR, maxProfile):
   
   # Estimates the HR image using bicubic interpolation
   LREstimated = resize(LR, None, fx = 2, fy = 2, interpolation = INTER_CUBIC)
-  
-  # Detecting the borders using Sobel method
-  gradX = Sobel(LREstimated, CV_16S, 1, 0, ksize = 5)
-  absGradX = convertScaleAbs(gradX)
-  gradY = Sobel(LREstimated, CV_16S, 0, 1, ksize = 5)
-  absGradY = convertScaleAbs(gradY)
-  borderPixels = addWeighted(absGradX, 0.5, absGradY, 0.5, 0)
 
-  # Converting to CV_32F
-  gradX = np.float32(gradX)
-  gradY = np.float32(gradY)
+  # Calculating thresholds
+  threshold = np.mean(LREstimated)
+  # Canny Edge Detection
+  borderPixels = Canny(LREstimated, threshold * 0.66, threshold * 1.33)
 
-  # Gradient Magnitude and Direction
+  gradX = Sobel(LREstimated, CV_64F, 1, 0, ksize = 3)
+  gradY = Sobel(LREstimated, CV_64F, 0, 1, ksize = 3)
+ 
   gradMagnitude = magnitude(gradX, gradY)
-  gradDirection = phase(gradX, gradY, True)
+  gradDirection = phase(gradX, gradY, angleInDegrees = True)
+
+  print gradDirection
 
   sharpnessMap = np.zeros((LREstimated.shape[0], LREstimated.shape[1]))
 
@@ -73,7 +71,7 @@ def GradientFieldTransformation(LR, maxProfile):
   for row in range(borderPixels.shape[0]):
     for col in range(borderPixels.shape[1]):
       # Checks if the pixel is a border one
-      if borderPixels[row][col] == 1:
+      if borderPixels[row][col] == 255:
         # Profile: col 0: gradient intensity, col 1: distance to border pixel
         profile = np.zeros((2 * maxProfile + 1, 2))
         j = maxProfile
@@ -85,7 +83,7 @@ def GradientFieldTransformation(LR, maxProfile):
           j = j + 1
        
         # Insert pixel into the border profile
-        profile[maxProfile + 1, 0] = gradMagnitude[row, col]
+        profile[maxProfile + 1][0] = gradMagnitude[row][col]
         
         # Finds the profile in the positive gradient direction
         profileRow = row
@@ -95,9 +93,9 @@ def GradientFieldTransformation(LR, maxProfile):
             direction = gradDirection[profileRow][profileCol]
             gradientMag = gradMagnitude[profileRow][profileCol]
             # Checks the position of the next profile pixel
-            if -175 < direction and direction <= -45:
+            if 185 < direction and direction <= 315:
                 profileRow = profileRow + 1
-            elif -45 < direction and direction <= 45:
+            elif 315 < direction or direction <= 45:
                 profileCol = profileCol + 1
             elif 45 < direction and direction <= 175:
                 profileRow = profileRow - 1
@@ -125,9 +123,9 @@ def GradientFieldTransformation(LR, maxProfile):
             gradientMag = gradMagnitude[profileRow][profileCol]
             
             # Checks the next profile pixel position
-            if -175 < direction and direction <= -45:
+            if 185 < direction and direction <= 315:
               profileRow = profileRow + 1
-            elif -45 < direction and direction <= 45:
+            elif 315 < direction or direction <= 45:
               profileCol = profileCol + 1
             elif 45 < direction and direction <= 175:
               profileRow = profileRow - 1
@@ -175,9 +173,9 @@ def GradientFieldTransformation(LR, maxProfile):
           gradientMag = gradMagnitude[profileRow][profileCol]
           
           # Checks the position of the next profile pixel
-          if -175 < direction and direction <= -45:
+          if 185 < direction and direction <= 315:
             profileRow = profileRow + 1
-          elif -45 < direction and direction <= 45:
+          elif 315 < direction or direction <= 45:
             profileCol = profileCol + 1
           elif 45 < direction and direction <= 175:
             profileRow = profileRow - 1
@@ -211,9 +209,9 @@ def GradientFieldTransformation(LR, maxProfile):
           gradientMag = gradMagnitude[profileRow][profileCol]
           
           # Checks the position of the next profile pixel
-          if -175 < direction and direction <= -45:
+          if 185 < direction and direction <= 315:
             profileRow = profileRow + 1
-          elif -45 < direction and direction <= 45:
+          elif 315 < direction or direction <= 45:
             profileCol = profileCol + 1
           elif 45 < direction and direction <= 175:
             profileRow = profileRow - 1

@@ -31,6 +31,7 @@ def createLR(image, kernel_size):
   return downsampling(image)
 
 def main():
+  np.set_printoptions(threshold=np.inf)
   # Variables
   isRGB = True
   imageName = 'original.jpg'
@@ -70,15 +71,11 @@ def main():
     currentHR = HR
     
     # Calculating the current HR gradient field
-    gradX = Sobel(currentHR, CV_16S, 1, 0, ksize = 5)
-    gradY = Sobel(currentHR, CV_16S, 0, 1, ksize = 5)
-
-    # Converting to CV_32F
-    gradX = np.float32(gradX)
-    gradY = np.float32(gradY)
+    gradX = Sobel(currentHR, CV_64F, 1, 0, ksize = 3)
+    gradY = Sobel(currentHR, CV_64F, 0, 1, ksize = 3)
 
     curGradMag = magnitude(gradX, gradY)
-    curGradDir = phase(gradX, gradY, True)
+    curGradDir = phase(gradX, gradY, angleInDegrees = True)
 
     curComplexGrad = curGradMag * np.exp(1j * curGradDir / 180 * np.pi)
     
@@ -107,6 +104,8 @@ def main():
     rmse = sqrt(sum(sum(rmse ** 2)) / rmse.size)
     
     counter = counter + 1
+
+  HR = np.uint8(HR)
 
   # Saving the results
   imwrite('result.png', HR)  
